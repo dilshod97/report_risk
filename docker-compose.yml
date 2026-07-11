@@ -1,0 +1,14 @@
+services:
+  report-bot:
+    build: .
+    container_name: report-bot
+    # .env host'dan o'qiladi (DB, Telegram token, chat_id lar)
+    env_file: .env
+    environment:
+      - TZ=Asia/Tashkent
+      - PYTHONUNBUFFERED=1
+    # Yaratilgan fayllarni host'dan ko'rish uchun (ixtiyoriy)
+    volumes:
+      - ./output:/app/output
+    # Yiqilsa yoki server qayta yuklansa - avtomatik qayta ishga tushadi
+    restart: always

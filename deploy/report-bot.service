@@ -1,0 +1,20 @@
+[Unit]
+Description=HP Report Bot - kunlik hisobotlar (Telegram)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+# __USER__ va __DIR__ ni o'zingiznikiga almashtiring (pastdagi DEPLOY.md ga qarang)
+User=__USER__
+WorkingDirectory=__DIR__
+ExecStart=__DIR__/.venv/bin/python main.py
+# Playwright brauzeri loyiha ichida saqlanadi (xizmat foydalanuvchisi topishi uchun)
+Environment=PYTHONUNBUFFERED=1
+Environment=PLAYWRIGHT_BROWSERS_PATH=__DIR__/.playwright
+# Yiqilsa - avtomatik qayta ishga tushadi
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target

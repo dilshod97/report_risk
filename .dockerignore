@@ -1,0 +1,8 @@
+.venv/
+.playwright/
+output/
+__pycache__/
+*.pyc
+.env
+.git/
+deploy/

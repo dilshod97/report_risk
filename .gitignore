@@ -1,0 +1,16 @@
+# Maxfiy sozlamalar
+.env
+
+# Virtual muhit va brauzer
+.venv/
+.playwright/
+
+# Yaratilgan hisobotlar
+output/
+
+# Python
+__pycache__/
+*.pyc
+
+# macOS
+.DS_Store
