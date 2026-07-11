@@ -226,7 +226,9 @@ def build() -> Path:
     out_path = config.OUTPUT_DIR / f"kunlik_hisobot_{dt.date.today().isoformat()}.pdf"
 
     with sync_playwright() as p:
-        browser = p.chromium.launch()
+        # --no-sandbox: konteynerda root sifatida ishlaganda chromium shusiz
+        # ishga tushmaydi. Docker'da /dev/shm kichik bo'lsa ham xavfsizroq.
+        browser = p.chromium.launch(args=["--no-sandbox", "--disable-dev-shm-usage"])
         try:
             page = browser.new_page()
             page.set_content(html, wait_until="networkidle")
