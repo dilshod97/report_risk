@@ -4,7 +4,12 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Callable
 
-from reports import excel_risk_groups, excel_risk_states, pdf_daily_summary
+from reports import (
+    excel_ikt_static,
+    excel_risk_groups,
+    excel_risk_states,
+    pdf_daily_summary,
+)
 
 
 @dataclass(frozen=True)
@@ -20,4 +25,5 @@ REPORTS: list[ReportSpec] = [
     ReportSpec("Kunlik umumiy hisobot (PDF)", pdf_daily_summary.build),
     ReportSpec("Aniqlangan risk guruhlari kesimida (Excel)", excel_risk_groups.build),
     ReportSpec("Aniqlangan risk holatlari (Excel)", excel_risk_states.build),
+    ReportSpec("Masofaviy audit tizimi ISHLAB chiqilishi (ИКТ, statik Excel)", excel_ikt_static.build),
 ]
