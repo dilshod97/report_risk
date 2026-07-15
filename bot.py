@@ -4,7 +4,7 @@ import asyncio
 import logging
 from pathlib import Path
 
-from telegram import Update
+from telegram import InputMediaDocument, Update
 from telegram.ext import Application, CommandHandler, ContextTypes
 
 import config
@@ -22,17 +22,14 @@ async def _broadcast_message(application: Application, text: str) -> None:
 
 
 async def send_reports(application: Application, paths: list[Path]) -> None:
-    for path in paths:
-        data = path.read_bytes()
-        for chat_id in config.TELEGRAM_CHAT_IDS:
-            try:
-                await application.bot.send_document(
-                    chat_id=chat_id, document=data, filename=path.name
-                )
-            except Exception:
-                logger.exception(
-                    "Hisobotni yuborishda xatolik: %s (chat_id=%s)", path, chat_id
-                )
+    # Barcha fayllar bitta guruhlangan xabar (albom) sifatida yuboriladi.
+    files = [(p.name, p.read_bytes()) for p in paths]
+    for chat_id in config.TELEGRAM_CHAT_IDS:
+        media = [InputMediaDocument(media=data, filename=name) for name, data in files]
+        try:
+            await application.bot.send_media_group(chat_id=chat_id, media=media)
+        except Exception:
+            logger.exception("Hisobotlarni yuborishda xatolik (chat_id=%s)", chat_id)
 
 
 async def generate_and_send_all(application: Application) -> None:
