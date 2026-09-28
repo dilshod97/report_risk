@@ -135,7 +135,13 @@ sum(case when u.qayerdan = 0 and u.qayerga=0 and u.is_approved = 3 then 1 else 0
 sum(case when u.qayerdan = 0 and u.qayerga=0 and u.is_approved = 3 then u.k_sum_k else 0 end) as nazoratdan_echildi_system_tasdiq_topmadi_sums,
 -- Назоратдан ечилган ижрочи система тасдиғини бошқа ҳолатлар
 sum(case when u.qayerdan = 0 and u.qayerga=0 and (u.is_approved not in (1, 2, 3, 4, 5, 6) or u.is_approved is null) then 1 else 0 end) as nazoratdan_echildi_sys_boshqa_holatlar,
-sum(case when u.qayerdan = 0 and u.qayerga=0 and (u.is_approved not in (1, 2, 3, 4, 5, 6) or u.is_approved is null) then u.k_sum_k else 0 end) as nazoratdan_echildi_sys_boshqa_holatlar
+sum(case when u.qayerdan = 0 and u.qayerga=0 and (u.is_approved not in (1, 2, 3, 4, 5, 6) or u.is_approved is null) then u.k_sum_k else 0 end) as nazoratdan_echildi_sys_boshqa_holatlar,
+--Кўриб чиқиш жараёнида: муддати мавжуд (юборилганига 1 ой тўлмаган ёки ҳаракат вақти йўқ)
+sum(case when u.qayerdan >= 1 and u.qayerga >= 1 and (u.harakat_vaqti is null or u.harakat_vaqti + INTERVAL '1 MONTH' >= current_date) then 1 else 0 end) as muddati_mavjud_son,
+sum(case when u.qayerdan >= 1 and u.qayerga >= 1 and (u.harakat_vaqti is null or u.harakat_vaqti + INTERVAL '1 MONTH' >= current_date) then u.k_sum_k else 0 end) as muddati_mavjud_sum,
+--Кўриб чиқиш жараёнида: муддати ўтган (юборилганига 1 ойдан ошган)
+sum(case when u.qayerdan >= 1 and u.qayerga >= 1 and u.harakat_vaqti + INTERVAL '1 MONTH' < current_date then 1 else 0 end) as muddati_otgan_son,
+sum(case when u.qayerdan >= 1 and u.qayerga >= 1 and u.harakat_vaqti + INTERVAL '1 MONTH' < current_date then u.k_sum_k else 0 end) as muddati_otgan_sum
 from
 (
 	select u.id, u.detected_date, u."event", u.profile_id, u.status_id, u.completed_date, u."degree", u.district, u.expanded_by, u.organization, u.region_id, u.action_id, u.degree_from_user, u.is_approved, u.prevent, u.is_approved_user, u.harakat_id, u.harakat_vaqti, u.kim_id, u.kimga_id, u.kimgacha, u.qayerdan, u.qayerga, u.k_inn1, u.k_inn2,

@@ -15,18 +15,31 @@ TEMPLATE_PATH = config.TEMPLATES_DIR / "risk_groups_template.xlsx"
 DATA_SHEET = "рўйхат"
 
 # рўйхат sheet tuzilishi:
-#   1-3 qatorlar   - yordamchi/bo'sh
+#   1-3 qatorlar   - yordamchi/bo'sh (B3 - hisobot sanasi)
 #   4-7 qatorlar   - ko'p bosqichli chiroyli sarlavha
-#   8-qator        - "Жами" (=SUM(X9:X9999) formulalari)
-#   9-qator        - SQL ustun nomlari (vaz_code, katta_otasi_nomi, ...)
+#   8-qator        - "Жами" (=SUM(X9:X9999) formulalari, shablonda tayyor)
+#   9-qator        - SQL ustun nomlari
 #   10-qatordan    - ma'lumot
-# Query natijasi ustunlari A..CP (1..94) ga pozitsion 1:1 mos keladi.
+# Query 98 ustun qaytaradi: 1-4 kalitlar, 5-94 asosiy ko'rsatkichlar,
+# 95-98 muddat kesimi (muddati mavjud/o'tgan son-summa).
+# Sheetda C ustuni ("Соҳа") qo'lda yuritiladi (formulalar unga tayanmaydi),
+# shuning uchun query ustunlari sheetga siljigan holda yotqiziladi:
+#   1-2  -> A-B,  3-94 -> D..CQ,  95-98 -> CZ..DC.
 HEADER_ROW = 9
 FIRST_DATA_ROW = 10
-DATA_COLUMN_COUNT = 94  # A..CP
+QUERY_COLUMN_COUNT = 98
+LAST_COLUMN = 107  # DC
 
-# Hisobot shakllangan sana ko'rsatiladigan katakchalar. Manba - рўйхат!B3,
-# 3 pivot esa uni '=рўйхат!B3' formulasi bilan oladi. Formula qayta
+
+def _sheet_col(query_col: int) -> int:
+    if query_col <= 2:
+        return query_col
+    if query_col <= 94:
+        return query_col + 1
+    return query_col + 9
+
+
+# Hisobot shakllangan sana ko'rsatiladigan katakchalar. Formula qayta
 # hisoblanmaydigan ko'ruvchilarda eskirmasligi uchun sanani har bir katakka
 # bevosita (statik qiymat) yozamiz.
 DATE_CELLS = {
@@ -36,18 +49,23 @@ DATE_CELLS = {
     "йўналиш гурухлари кесимида": "CH4",
 }
 
-# Har bir ma'lumot qatoriga qo'yiladigan yordamchi ustun formulalari (CQ..CV).
-# {r} - qator raqami bilan almashtiriladi. Pivot sheetlar shu ustunlarga
-# (CS, CU, CV) tayanib SUMIFS orqali hisoblaydi.
+# 'Вазирликлар кесимида_new' varag'idagi davr matni.
+PERIOD_SHEET = "Вазирликлар кесимида_new"
+PERIOD_CELL = "D4"
+
+# Har bir ma'lumot qatoriga qo'yiladigan yordamchi ustun formulalari.
+# {r} - qator raqami bilan almashtiriladi. CR/CS - "Тасдиғини топган",
+# CT..CY - pivotlar tayanadigan VLOOKUP yordamchilari.
 HELPER_FORMULAS = {
-    95: "=VLOOKUP(C{r},'Йўналишлар кесимида '!B:C,1,0)",       # CQ
-    96: "=VLOOKUP(B{r},'Вазирликлар кесимида (22)'!B:CF,1,0)",  # CR
-    97: "=VLOOKUP(D{r},справочник!D:E,2,0)",                    # CS
-    98: "=VLOOKUP(CS{r},'йўналиш гурухлари кесимида'!B:B,1,0)",  # CT
-    99: '=IFERROR(CR{r},"Бошқалар")',                           # CU
-    100: "=VLOOKUP(C{r},справочник!A:B,2,0)",                   # CV
+    96: "=+BP{r}+BR{r}+BZ{r}+CB{r}+CJ{r}+CL{r}",                # CR
+    97: "=+BQ{r}+BS{r}+CA{r}+CC{r}+CK{r}+CM{r}",                # CS
+    98: "=VLOOKUP(D{r},'Йўналишлар кесимида '!B:C,1,0)",        # CT
+    99: "=VLOOKUP(B{r},'Вазирликлар кесимида (22)'!B:CF,1,0)",  # CU
+    100: "=VLOOKUP(E{r},справочник!D:E,2,0)",                    # CV
+    101: "=VLOOKUP(CV{r},'йўналиш гурухлари кесимида'!B:B,1,0)", # CW
+    102: '=IFERROR(CU{r},"Бошқалар")',                           # CX
+    103: "=VLOOKUP(D{r},справочник!A:B,2,0)",                    # CY
 }
-LAST_HELPER_COLUMN = 100
 
 
 def _cell_value(value):
@@ -63,7 +81,7 @@ def fill_workbook(columns: list[str], rows: list[tuple]):
     # Eski ma'lumot qatorlari uchun uslub namunasini (birinchi data qatoridan)
     # saqlab qolamiz, keyin yangi qatorlarga qo'llash uchun.
     style_by_col = {}
-    for col in range(1, LAST_HELPER_COLUMN + 1):
+    for col in range(1, LAST_COLUMN + 1):
         src = ws.cell(row=FIRST_DATA_ROW, column=col)
         style_by_col[col] = {
             "font": copy(src.font),
@@ -80,10 +98,12 @@ def fill_workbook(columns: list[str], rows: list[tuple]):
     # Yangi ma'lumotni yozish.
     for i, row in enumerate(rows):
         r = FIRST_DATA_ROW + i
-        for col in range(1, DATA_COLUMN_COUNT + 1):
-            value = _cell_value(row[col - 1]) if col - 1 < len(row) else None
+        for qcol in range(1, QUERY_COLUMN_COUNT + 1):
+            col = _sheet_col(qcol)
+            value = _cell_value(row[qcol - 1]) if qcol - 1 < len(row) else None
             cell = ws.cell(row=r, column=col, value=value)
             _apply_style(cell, style_by_col.get(col))
+        _apply_style(ws.cell(row=r, column=3), style_by_col.get(3))  # C bo'sh
         for col, formula in HELPER_FORMULAS.items():
             cell = ws.cell(row=r, column=col, value=formula.format(r=r))
             _apply_style(cell, style_by_col.get(col))
@@ -96,6 +116,8 @@ def fill_workbook(columns: list[str], rows: list[tuple]):
         fmt = cell.number_format
         cell.value = today
         cell.number_format = fmt
+    if PERIOD_SHEET in wb.sheetnames:
+        wb[PERIOD_SHEET][PERIOD_CELL] = f"01.01.2024-{today:%d.%m.%Y} й"
 
     # Excel/LibreOffice faylni ochganda barcha formulalar (Жами, pivotlar,
     # yordamchi ustunlar) qayta hisoblanishi uchun.
