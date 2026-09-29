@@ -74,7 +74,7 @@ def _cell_value(value):
     return value
 
 
-def fill_workbook(columns: list[str], rows: list[tuple]):
+def fill_workbook(columns: list[str], rows: list[tuple], period_start: str = "01.01.2024"):
     wb = load_workbook(TEMPLATE_PATH)
     ws = wb[DATA_SHEET]
 
@@ -117,7 +117,7 @@ def fill_workbook(columns: list[str], rows: list[tuple]):
         cell.value = today
         cell.number_format = fmt
     if PERIOD_SHEET in wb.sheetnames:
-        wb[PERIOD_SHEET][PERIOD_CELL] = f"01.01.2024-{today:%d.%m.%Y} й"
+        wb[PERIOD_SHEET][PERIOD_CELL] = f"{period_start}-{today:%d.%m.%Y} й"
 
     # Excel/LibreOffice faylni ochganda barcha formulalar (Жами, pivotlar,
     # yordamchi ustunlar) qayta hisoblanishi uchun.
@@ -135,12 +135,17 @@ def _apply_style(cell, style):
     cell.number_format = style["number_format"]
 
 
-def build() -> Path:
-    columns, rows = run_query_rows(config.QUERIES_DIR / "daily_summary.sql")
-    wb = fill_workbook(columns, rows)
+def build(date_from: str | None = None) -> Path:
+    """date_from berilsa (YYYY-MM-DD) hisobot shu sanadan boshlab yig'iladi
+    (standart - 2024-01-01, ya'ni butun davr)."""
+    replacements = {"'2024-01-01'": f"'{date_from}'"} if date_from else None
+    columns, rows = run_query_rows(config.QUERIES_DIR / "daily_summary.sql", replacements)
+    period_start = "01.01.2024" if not date_from else dt.date.fromisoformat(date_from).strftime("%d.%m.%Y")
+    wb = fill_workbook(columns, rows, period_start=period_start)
 
     config.OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
-    out_path = config.OUTPUT_DIR / f"risk_guruhlari_{dt.date.today().isoformat()}.xlsx"
+    suffix = "" if not date_from else f"_{dt.date.fromisoformat(date_from).year}_yil"
+    out_path = config.OUTPUT_DIR / f"risk_guruhlari{suffix}_{dt.date.today().isoformat()}.xlsx"
     wb.save(out_path)
     return out_path
 

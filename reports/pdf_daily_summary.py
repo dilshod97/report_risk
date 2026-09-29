@@ -218,12 +218,15 @@ def render_html(rows: list[dict]) -> str:
     return template.render(kpi=build_kpi(rows), cards=build_cards(rows))
 
 
-def build() -> Path:
-    rows = run_query(config.QUERIES_DIR / "daily_summary.sql")
+def build(date_from: str | None = None) -> Path:
+    """date_from berilsa (YYYY-MM-DD) hisobot shu sanadan boshlab yig'iladi."""
+    replacements = {"'2024-01-01'": f"'{date_from}'"} if date_from else None
+    rows = run_query(config.QUERIES_DIR / "daily_summary.sql", replacements)
     html = render_html(rows)
 
     config.OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
-    out_path = config.OUTPUT_DIR / f"kunlik_hisobot_{dt.date.today().isoformat()}.pdf"
+    suffix = "" if not date_from else f"_{dt.date.fromisoformat(date_from).year}_yil"
+    out_path = config.OUTPUT_DIR / f"kunlik_hisobot{suffix}_{dt.date.today().isoformat()}.pdf"
 
     with sync_playwright() as p:
         # --no-sandbox: konteynerda root sifatida ishlaganda chromium shusiz

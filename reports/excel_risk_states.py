@@ -91,12 +91,22 @@ def fill_workbook(columns: list[str], rows: list[tuple]):
     return wb
 
 
-def build() -> Path:
-    columns, rows = run_query_rows(config.QUERIES_DIR / "center_staff.sql")
+def build(date_from: str | None = None) -> Path:
+    """date_from berilsa (YYYY-MM-DD) faqat shu sanadan keyin aniqlangan
+    holatlar hisobga olinadi (standart - butun davr, filtrsiz)."""
+    replacements = None
+    if date_from:
+        replacements = {
+            "where p.hidden_profile is false": (
+                f"where p.hidden_profile is false and u.detected_date >= '{date_from}'"
+            )
+        }
+    columns, rows = run_query_rows(config.QUERIES_DIR / "center_staff.sql", replacements)
     wb = fill_workbook(columns, rows)
 
     config.OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
-    out_path = config.OUTPUT_DIR / f"risk_holatlari_{dt.date.today().isoformat()}.xlsx"
+    suffix = "" if not date_from else f"_{dt.date.fromisoformat(date_from).year}_yil"
+    out_path = config.OUTPUT_DIR / f"risk_holatlari{suffix}_{dt.date.today().isoformat()}.xlsx"
     wb.save(out_path)
     return out_path
 
