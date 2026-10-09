@@ -28,7 +28,7 @@ DATA_SHEET = "рўйхат"
 HEADER_ROW = 9
 FIRST_DATA_ROW = 10
 QUERY_COLUMN_COUNT = 98
-LAST_COLUMN = 107  # DC
+LAST_COLUMN = 108  # DD (Комплаенс)
 
 
 def _sheet_col(query_col: int) -> int:
@@ -49,9 +49,8 @@ DATE_CELLS = {
     "йўналиш гурухлари кесимида": "CH4",
 }
 
-# 'Вазирликлар кесимида_new' varag'idagi davr matni.
-PERIOD_SHEET = "Вазирликлар кесимида_new"
-PERIOD_CELL = "D4"
+# Davr matni yoziladigan kataklar.
+PERIOD_CELLS = [("Вазирликлар кесимида_new", "D4"), ("Вазирлик коррупцион", "D4")]
 
 # Har bir ma'lumot qatoriga qo'yiladigan yordamchi ustun formulalari.
 # {r} - qator raqami bilan almashtiriladi. CR/CS - "Тасдиғини топган",
@@ -65,6 +64,9 @@ HELPER_FORMULAS = {
     101: "=VLOOKUP(CV{r},'йўналиш гурухлари кесимида'!B:B,1,0)", # CW
     102: '=IFERROR(CU{r},"Бошқалар")',                           # CX
     103: "=VLOOKUP(D{r},справочник!A:B,2,0)",                    # CY
+    # DD - Комплаенс belgisi: risk nomi 'Комплаенс реестр'da korrupsion (1)
+    # deb belgilangan bo'lsa 1. 'Вазирлик коррупцион' varag'i shu ustunga tayanadi.
+    108: "=IF(COUNTIFS('Комплаенс реестр'!$C:$C,D{r},'Комплаенс реестр'!$D:$D,1)>0,1,\"\")",
 }
 
 
@@ -116,8 +118,9 @@ def fill_workbook(columns: list[str], rows: list[tuple], period_start: str = "01
         fmt = cell.number_format
         cell.value = today
         cell.number_format = fmt
-    if PERIOD_SHEET in wb.sheetnames:
-        wb[PERIOD_SHEET][PERIOD_CELL] = f"{period_start}-{today:%d.%m.%Y} й"
+    for sheet_name, coord in PERIOD_CELLS:
+        if sheet_name in wb.sheetnames:
+            wb[sheet_name][coord] = f"{period_start}-{today:%d.%m.%Y} й"
 
     # Excel/LibreOffice faylni ochganda barcha formulalar (Жами, pivotlar,
     # yordamchi ustunlar) qayta hisoblanishi uchun.
