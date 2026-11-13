@@ -1,5 +1,5 @@
 --Қунлик умумий ҳисобот
-select u.vaz_code, m.katta_otasi_nomi, p.description, p.g_name,
+select u.vaz_code, m.katta_otasi_nomi, p.name_cr, p.g_name,
 -- u.organization, u.profile_id,
 --Жами аниқланган сумма
 count(1) as all_count,
@@ -170,4 +170,4 @@ left join
 	left join public."groups" g on p.group_id = g.id
 ) p on u.profile_id=p.id
 where u.detected_date >= '2024-01-01' -- and u.organization = 6 and p.description='Тўғридан-тўғри шартномалар мониторинги' and u.vaz_code = '200936593'
-group by u.vaz_code, m.katta_otasi_nomi, p.description, p.g_name;
+group by u.vaz_code, m.katta_otasi_nomi, p.name_cr, p.g_name;

@@ -63,7 +63,10 @@ HELPER_FORMULAS = {
     100: "=VLOOKUP(E{r},справочник!D:E,2,0)",                    # CV
     101: "=VLOOKUP(CV{r},'йўналиш гурухлари кесимида'!B:B,1,0)", # CW
     102: '=IFERROR(CU{r},"Бошқалар")',                           # CX
-    103: "=VLOOKUP(D{r},справочник!A:B,2,0)",                    # CY
+    # Endi D ustunida profiles.name_cr (frontdagi nom) keladi; справочник
+    # A:B da eski variant nomlari uchun mapping qolgan, topilmasa nomning
+    # o'zi ishlatiladi.
+    103: "=IFERROR(VLOOKUP(D{r},справочник!A:B,2,0),D{r})",      # CY
     # DD - Комплаенс belgisi: risk nomi 'Комплаенс реестр'da korrupsion (1)
     # deb belgilangan bo'lsa 1. 'Вазирлик коррупцион' varag'i shu ustunga tayanadi.
     108: "=IF(COUNTIFS('Комплаенс реестр'!$C:$C,D{r},'Комплаенс реестр'!$D:$D,1)>0,1,\"\")",
